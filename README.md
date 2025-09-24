@@ -29,6 +29,7 @@ This service provides AI Agents with the understanding of your applications from
 - [Security Notes](#security-notes)
 - [Package Contents](#package-contents)
 - [Support](#support)
+- [License](#license)
 
 ---
 
@@ -472,4 +473,5 @@ The project’s source code is **proprietary** and is **not** published under an
 - You may view and share this documentation freely, but it may not be used to infer or imply rights to the proprietary software.  
 
 For commercial licensing inquiries, please contact your local CAST representative (https://www.castsoftware.com/overview).
+
 ---
