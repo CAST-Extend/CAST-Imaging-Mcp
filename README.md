@@ -463,4 +463,13 @@ com.castsoftware.imaging.mcpserver.docker.1.0.2-funcrel/
 - Validate `app.config`, `.env`, `mcp.json` paths and values
 - Ensure network reachability between client ↔ server ↔ Imaging‑APIs
 
+## License
+This repository contains documentation only.  
+The project’s source code is **proprietary** and is **not** published under an open-source license.  
+
+- The source code is licensed separately under a **commercial license** and is not included in this repository.  
+- No rights are granted to the source code through this repository.  
+- You may view and share this documentation freely, but it may not be used to infer or imply rights to the proprietary software.  
+
+For commercial licensing inquiries, please contact your local CAST representative (https://www.castsoftware.com/overview).
 ---
