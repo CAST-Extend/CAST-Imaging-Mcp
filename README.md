@@ -1,5 +1,5 @@
 # CAST Imaging MCP Server
-
+<!-- mcp-name: io.github.CAST-Extend/imaging-mcp-server -->
 ## Overview
 
 The CAST Imaging MCP Server bridges the gap between AI agents and real software architecture by exposing comprehensive software intelligence through the Model Context Protocol (MCP). It allows the user to get insights about their applications ,transactions, dependencies, quality patterns, and architectural structures by prompting AI agents.
