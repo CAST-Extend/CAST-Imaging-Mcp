@@ -1,5 +1,5 @@
 # CAST Imaging MCP Server
-<!-- mcp-name: io.github.CAST-Extend/imaging-mcp-server -->
+
 ## Overview
 
 The CAST Imaging MCP Server bridges the gap between AI agents and real software architecture by exposing comprehensive software intelligence through the Model Context Protocol (MCP). It allows the user to get insights about their applications ,transactions, dependencies, quality patterns, and architectural structures by prompting AI agents.
@@ -20,7 +20,7 @@ This service provides AI Agents with the understanding of your applications from
 - [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Configuration Reference](#configuration-reference)
-- [Running (HTTP/HTTPS)](#running-httphttps)
+- [Running (HTTP)](#running-http)
 - [Windows Installation](#windows-installation)
 - [VS Code + GitHub Copilot Setup](#vs-code--github-copilot-setup)
 - [Verification & Test Queries](#verification--test-queries)
@@ -29,7 +29,6 @@ This service provides AI Agents with the understanding of your applications from
 - [Security Notes](#security-notes)
 - [Package Contents](#package-contents)
 - [Support](#support)
-- [License](#license)
 
 ---
 
@@ -40,9 +39,6 @@ This service provides AI Agents with the understanding of your applications from
 - **CAST Imaging‑APIs** service reachable from this host
 - **MCP‑aware client** (e.g., GitHub Copilot in VS Code, Claude Desktop)
 - **CAST Imaging API Key** (generate from your Imaging user profile)
-
-### Optional
-- **CA‑signed TLS certificate + private key** for HTTPS
 
 ### Download
 - Download the installer for CAST Imaging MCP server
@@ -59,7 +55,7 @@ This service provides AI Agents with the understanding of your applications from
    ```
 2. **Extract** the installer zip.
 3. **Configure** `config/app.config` and `.env`.
-4. **Start** the server with `./run.sh`.
+4. **Start** the server with `./run.sh --install`.
 5. **Configure client** (VS Code Copilot or Claude) with your server URL.
 6. **Test** queries (see examples below).
 
@@ -72,11 +68,8 @@ This service provides AI Agents with the understanding of your applications from
 com.castsoftware.imaging.mcpserver.docker.1.0.2-funcrel/
 ├─ config/
 │  └─ app.config
-├─ nginx/
-│  └─ nginx.conf
 ├─ .env                      # hidden; use `ls -a`
 ├─ docker-compose.yml
-├─ docker-compose.https.yml
 ├─ run.sh
 ├─ README.md
 └─ copilot-instructions.md
@@ -93,8 +86,13 @@ PORT_CONTROL_PANEL=8098                        # Default Control Panel registry 
 IMAGING_PAGE_SIZE=1000                         # Internal fetch batch size
 IMAGING_DISPLAY_PAGE_SIZE=20                   # Page size in responses
 IMAGING_CODE=False                             # Source code access via MCP (security sensitive)
-DEBUG_MODE=true                                # Debug mode to see the activity in logs
-HTTPS_ENABLED=false                            # Turn on if serving HTTPS (see below)
+DEBUG_MODE=false                               # Debug mode to see the activity in logs
+IMAGING_DOMAIN="default"                       # Imaging domain/tenant
+CONTROL_PANEL_SSL_ENABLED=false                # Set true only if Control Panel config/eureka is on HTTPS
+MCP_TOOL_SURFACE_PROFILE="full"                # MCP tool exposure profile: "intents" or "full"
+MCP_INTENTS_HIDDEN_FUNCTIONS=""                # Comma-separated structural functions hidden from intents mode
+SERVICE_HOST="your-service-host"               # REQUIRED: The IP/hostname of the machine on which the MCP Server is running
+SSL_CA_BUNDLE=""                               # Optional PEM bundle for private/self-signed CAs
 ```
 
 Set your exposed port in `.env` (hidden file):
@@ -106,9 +104,11 @@ MCP_SERVER_PORT=8282
 ### 4) Start
 ```bash
 chmod +x run.sh
-./run.sh
+./run.sh --install
 ```
 This launches the Docker Compose stack and the MCP server.
+
+If you use `SSL_CA_BUNDLE`, place the PEM file in a `certificates/` folder next to `docker-compose.yml`. The compose file mounts that folder into the container at `/app/certificates`.
 
 ---
 
@@ -139,29 +139,42 @@ This is a service registry used by Imaging to register and discover its internal
 It's `false` by default, as agents typically work on open repos. Enabling it can expose source code to anyone with MCP access, making it a potential security risk, especially relevant for clients like Claude desktop without direct repo access.
 
 ### `DEBUG_MODE`
-**Default:** `true`  
+**Default:** `false`  
 **Description:** Debug mode will show teh activity in the logs. When set to true it will show the tool picked, the API called and the result for each user prompt. When set to false, it will only show the tool picked and the corresponding API called.
 
-### `HTTPS_ENABLED`
+### `IMAGING_DOMAIN`
+**Default:** `default`  
+**Description:** Imaging domain/tenant used to fetch data in multi-tenant environments.
+
+### `CONTROL_PANEL_SSL_ENABLED`
 **Default:** `false`  
-**Description:** Should be set to `true` if using HTTPS between the client and MCP server.
+**Description:** Set to `true` when Control Panel config/eureka endpoints run on HTTPS.
+
+### `MCP_TOOL_SURFACE_PROFILE`
+**Default:** `full`
+**Description:** Selects the MCP tool exposure profile. Use `full` to expose the complete toolset, or `intents` for the meta-tool surface.
+
+### `MCP_INTENTS_HIDDEN_FUNCTIONS`
+**Default:** empty
+**Description:** Comma-separated list of structural functions to hide when `MCP_TOOL_SURFACE_PROFILE` is set to `intents`.
+
+### `SERVICE_HOST` (Required)
+**Default:** None (user needs to provide the value)  
+**Description:** IP/hostname of the machine on which the MCP Server is running.
+
+### `SSL_CA_BUNDLE`
+**Default:** empty  
+**Description:** Optional path to a PEM CA bundle for private/self-signed certificate chains. With the Docker installer, place the PEM under `./certificates/` and reference it as `/app/certificates/<file>.pem`.
 
 ---
 
-## Running (HTTP/HTTPS)
+## Running (HTTP)
 
-### HTTP (default)
-1. Keep `HTTPS_ENABLED=false`(the dafault value) in `config/app.config`.
-2. Start with `./run.sh` (this will use the `docker-compose.yml`).
-
-### HTTPS (optional, recommended for production)
-1. Set `HTTPS_ENABLED=true` in `config/app.config`.
-2. Create `certificates/` folder in the installer directory root. Inside this, add your certificate and private key files with the following names:
-   - `certificate.pem` (server certificate)
-   - `private_key.pem` (private key)
-3. Start with `./run.sh` (this will use the `docker-compose.https.yml` + Nginx TLS termination).
-
-> HTTPS mode fronts the app with **Nginx**. Place certs with correct names.
+Start the server with:
+```bash
+chmod +x run.sh
+./run.sh --install
+```
 
 ---
 
@@ -202,6 +215,7 @@ curl -H "x-api-key: <your-imaging-api-key>"
 Edit `configuration.conf` with your environment settings:
 ```ini
 HOSTNAME_CONTROL_PANEL="your-control-panel-host"      # Required: IP or hostname of Control Panel server
+SERVICE_HOST="your-service-host"                      # Required: IP/hostname of the MCP Server machine
 PORT_CONTROL_PANEL=8098                               # Default Control Panel registry port  
 MCP_SERVER_PORT=8282                                  # Default MCP server port
 INSTALL_DIR=C:\Program Files\Cast\Imaging-MCP-Server  # Default installation location
@@ -209,6 +223,12 @@ CONFIG_DIR=C:\ProgramData\CAST\Imaging-MCP-Server     # Default config files loc
 IMAGING_PAGE_SIZE=1000                                # Records per internal request
 IMAGING_DISPLAY_PAGE_SIZE=20                          # Records per response page
 IMAGING_CODE=False                                    # Enable source code access (security consideration)
+DEBUG_MODE=false                                      # Debug mode to see the activity in logs
+IMAGING_DOMAIN=default                                # Imaging domain/tenant
+CONTROL_PANEL_SSL_ENABLED=false                       # Set true only if Control Panel config/eureka is on HTTPS
+MCP_TOOL_SURFACE_PROFILE=full                         # MCP tool exposure profile: full or intents
+MCP_INTENTS_HIDDEN_FUNCTIONS=                         # Comma-separated structural functions hidden from intents mode
+SSL_CA_BUNDLE=                                        # Optional PEM bundle for private/self-signed CAs
 ```
 
 ### 4) Install as Windows Service
@@ -289,6 +309,11 @@ mcp-server-installer.bat --help                         : Display help message
       "id": "imaging-key",
       "type": "promptString",
       "description": "CAST Imaging API Key"
+    },
+    {
+      "id": "imaging-tenant",
+      "type": "promptString",
+      "description": "Imaging tenant"
     }
   ],
   "servers": {
@@ -296,13 +321,13 @@ mcp-server-installer.bat --help                         : Display help message
       "type": "http",
       "url": "http://<your-mcp-server-host:port>/mcp/",
       "headers": {
-        "x-api-key": "${input:imaging-key}"
+        "x-api-key": "${input:imaging-key}",
+        "x-user-tenant": "${input:imaging-tenant}"
       }
     }
   }
 }
 ```
-> **For HTTPS**: change `http://` to `https://`.
 
 ### 4) (Alternative) Manual registration flow
 If VS Code doesn’t auto‑pick the server:
@@ -314,7 +339,8 @@ If VS Code doesn’t auto‑pick the server:
 "my-mcp-server-xxxx": {
   "url": "http://<your-mcp-server-host:port>/mcp/",
   "headers": {
-    "x-api-key": "${input:imaging-key}"
+    "x-api-key": "${input:imaging-key}",
+    "x-user-tenant": "${input:imaging-tenant}"
   }
 }
 ```
@@ -363,10 +389,13 @@ List applications insights
 <summary><b>Portfolio</b></summary>
 
 - **applications** — List the available applications in CAST Imaging
+- **all_applications** — List all applications (cloud build)
+- **my_applications** — List applications belonging to the current user (cloud build)
 - **applications_transactions** — Get transactions from all applications with filtering support
 - **applications_data_graphs** — Data entity interaction networks (data graphs) from all applications
 - **applications_dependencies** — Inter-dependencies between all applications
 - **applications_quality_insights** — Quality insights including CVE, cloud detection patterns, and green detection patterns
+- **get_mcp_info** — Get MCP server and Imaging version/environment information
 
 </details>
 
@@ -378,26 +407,30 @@ List applications insights
 - **architectural_graph** — Get architectural graph data (nodes/links) at specific levels (layer, component, sub-component, technology-category, element-type)
 - **architectural_graph_focus** — Get focused architectural graph data for specific areas
 - **quality_insights** — Get quality-related insights (CVE, cloud patterns, green patterns, structural flaws, ISO-5055)
-- **quality_insight_occurrences** — Get specific occurrences of quality insights by ID
+- **quality_insight_violations** — Get specific violations of quality insights by ID, with optional locations
 - **packages** — Get package information and dependencies
 - **package_interactions** — Get interactions with specific packages by component and version
+- **transaction_profiles** — Get available transaction profiles
 - **transactions** — Get transactions with optional filtering by name, fullname, or type
-- **transaction_objects_with_insights** — Get objects with insights within specific transactions
-- **transaction_complex_objects** — Get complex objects within specific transactions  
-- **transaction_documents** — Get documents for specific transactions
-- **add_transaction_document** — Add documentation to specific transactions
-- **transaction_graph** — Get transaction graph data (nodes/links) at different granularity levels
-- **transaction_graph_focus** — Get focused transaction graph data concentrating on complex objects
+- **transaction_details** — Get focused information about a transaction by ID
+- **add_view_document** — Add documentation to a transaction or data graph
 - **data_graphs** — Get data entity interaction networks (data graphs) with optional filtering
-- **data_graph_objects_with_insights** — Get objects with insights within specific data graphs
-- **data_graph_complex_objects** — Get complex objects within specific data graphs
-- **data_graph_documents** — Get documents for specific data graphs
-- **add_datagraph_document** — Add documentation to specific data graphs
-- **data_graph_graph** — Get data graph structure (nodes/links) at different granularity levels
-- **data_graph_graph_focus** — Get focused data graph structure concentrating on complex objects
-- **documents** — Find documents about code elements and graphs matching search text (requires IMAGING_CODE=True)
+- **data_graph_profiles** — Get available data graph profiles
+- **data_graph_details** — Get focused information about a data graph by ID
 - **inter_applications_dependencies** — Get inward and outward inter-application dependencies
 - **inter_app_detailed_dependencies** — Get detailed dependencies between two specific applications
+- **advisor_occurrences** — Get occurrences supporting a selected advisor
+- **application_iso_5055_explorer** — Explore ISO 5055 characteristics and weaknesses
+- **api_inventory** — Get API inventory for an application
+- **advisors** — Get migration/modernization advisors, rules, and violations
+- **dynamic_views** — List custom aggregation views
+- **dynamic_view_details** — Get a custom view graph or objects inside a custom node
+- **manage_dynamic_view** — Create, delete, rename, publish, or unpublish custom views
+- **configure_dynamic_view** — Add or delete custom nodes in a custom view
+- **views** — List saved views
+- **view_details** — Get saved view details
+- **manage_view** — Create, update, or delete saved views
+- **tags** — List tags available in an application
 
 </details>
 
@@ -405,12 +438,25 @@ List applications insights
 <summary><b>Objects</b></summary>
 
 - **objects** — Get objects in an application matching identification criteria (name, fullname, mangling, type, filepath)
+- **object_profiles** — Get available object profiles
 - **object_details** — Get comprehensive details for objects including properties, relationships, code snippets, and usage statistics
 - **add_object_document** — Add documentation text to a specific object identified by ID
+- **manage_object_tags** — Add or delete tags on explicitly identified objects
+- **bulk_manage_object_tags** — Add or delete tags on objects selected by server-side criteria
+- **objects_relationships** — Find relationships between multiple objects
+- **pathfinder_hierarchy_details** — Find execution paths, call chains, and hierarchy details
 - **source_files** — Find source files that define code objects matching file path criteria
 - **source_file_details** — Get detailed information about source files and their code elements (inventory, intra, inward, outward, testing)
 - **transactions_using_object** — Get transactions that use objects matching specified criteria
 - **data_graphs_involving_object** — Get data entity interaction networks (data graphs) that involve specific objects
+
+</details>
+
+<details>
+<summary><b>Structural Search (intents profile)</b></summary>
+
+- **get_structural_search_function_syntax** — Get syntax and usage details for structural search functions
+- **run_structural_search_function** — Execute a structural search function through the generic dispatcher
 
 </details>
 
@@ -420,10 +466,10 @@ List applications insights
 
 | Symptom | Likely Cause | What to do |
 |---|---|---|
-| `ECONNREFUSED` from client | Server not running | `docker ps`, then `./run.sh` to start |
+| `ECONNREFUSED` from client | Server not running | `docker ps`, then `./run.sh --install` to start |
 | Auth errors | Wrong/expired Imaging API key | Regenerate key from Imaging profile |
 | Empty answers | Imaging‑APIs unreachable | Recheck `HOST_CONTROL_PANEL` / `PORT_CONTROL_PANEL`, health endpoint |
-| HTTPS handshake/error | Bad/missing cert files | Place `certificate.pem` & `private_key.pem` under `certificates/`, correct perms |
+| HTTPS handshake/error | Private/self-signed Control Panel certificate | Set `CONTROL_PANEL_SSL_ENABLED=true` and configure `SSL_CA_BUNDLE` |
 | VS Code not prompting for key | Missing `inputs` in `mcp.json` | Add the `inputs` block (see setup) |
 
 ### Logs & Checks
@@ -438,19 +484,17 @@ curl -H "x-api-key: <your-key>"      http://{CONTROL_PANEL_HOST}:8090/imaging/ap
 ---
 
 ## Security Notes
-- **HTTPS in production**: enable TLS termination via Nginx (see [Running](#running-httphttps)).
 - **`IMAGING_CODE` = False by default**: enabling allows MCP clients to access source code → restrict by policy, network, and credentials.
+- **`SSL_CA_BUNDLE` for private CAs**: prefer a CA bundle over disabling TLS verification.
 - **Principle of least privilege**: limit who can obtain/enter Imaging API keys in MCP hosts.
 
 ---
 
 ## Package Contents
 ```
-com.castsoftware.imaging.mcpserver.docker.1.0.2-funcrel/
+com.castsoftware.imaging.mcpserver.docker.__MCP_VERSION__/
 ├─ config/app.config
-├─ nginx/nginx.conf
 ├─ docker-compose.yml
-├─ docker-compose.https.yml
 ├─ run.sh
 ├─ .env                      # hidden
 ├─ README.md                 # original docs
@@ -463,6 +507,8 @@ com.castsoftware.imaging.mcpserver.docker.1.0.2-funcrel/
 - Check container logs and the Imaging‑APIs health endpoint
 - Validate `app.config`, `.env`, `mcp.json` paths and values
 - Ensure network reachability between client ↔ server ↔ Imaging‑APIs
+
+---
 
 ## License
 This repository contains documentation only.  
